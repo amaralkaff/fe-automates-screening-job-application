@@ -13,7 +13,7 @@ export class ApiDebugger {
 
       try {
         // Try multiple possible endpoints to find one that works
-        const endpoints = ['/health', '/api/auth/session', '/api/auth/sign-in'];
+        const endpoints = ['/health', '/auth/session', '/auth/sign-in'];
 
         for (const endpoint of endpoints) {
           try {
