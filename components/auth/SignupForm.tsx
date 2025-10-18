@@ -28,20 +28,6 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
 
-  const checkConnection = async () => {
-    // Use relative URL for production, absolute for local development
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
-    setConnectionStatus('checking');
-
-    const result = await ApiDebugger.testConnectivity(apiUrl);
-    setConnectionStatus(result.success ? 'connected' : 'failed');
-
-    if (!result.success) {
-      console.error('API Connection Failed:', result.error);
-    }
-
-    return result.success;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +35,11 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
     setIsLoading(true);
 
     try {
-      // For production APIs, skip connectivity check to avoid CORS issues
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
       const isProductionApi = !apiUrl.includes('localhost');
       
       if (!isProductionApi) {
-        const isConnected = await checkConnection();
-        if (!isConnected) {
-          setError('Cannot connect to the server. Please check your internet connection or try again later.');
-          return;
-        }
+        // Skip connectivity check for production to avoid CORS issues
       }
 
       await signUp(formData);
@@ -220,7 +201,6 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => checkConnection()}
                   className="w-full bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded text-xs"
                   disabled={connectionStatus === 'checking'}
                 >

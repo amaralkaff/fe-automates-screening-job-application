@@ -11,10 +11,39 @@
 #   to = "/.netlify/functions/:splat"
 #   status = 200
 
-# Add proxy redirect for external API
+# Add proxy redirect for auth endpoints
 [[redirects]]
   from = "/api/*"
   to = "https://amangly.web.id/:splat"
+  status = 200
+  force = true
+  headers = {X-Forwarded-Host = "amangly.web.id"}
+
+# Add proxy redirect for non-auth endpoints
+[[redirects]]
+  from = "/upload"
+  to = "https://amangly.web.id/upload"
+  status = 200
+  force = true
+  headers = {X-Forwarded-Host = "amangly.web.id"}
+
+[[redirects]]
+  from = "/evaluate"
+  to = "https://amangly.web.id/evaluate"
+  status = 200
+  force = true
+  headers = {X-Forwarded-Host = "amangly.web.id"}
+
+[[redirects]]
+  from = "/jobs"
+  to = "https://amangly.web.id/jobs"
+  status = 200
+  force = true
+  headers = {X-Forwarded-Host = "amangly.web.id"}
+
+[[redirects]]
+  from = "/status/*"
+  to = "https://amangly.web.id/status/:splat"
   status = 200
   force = true
   headers = {X-Forwarded-Host = "amangly.web.id"}

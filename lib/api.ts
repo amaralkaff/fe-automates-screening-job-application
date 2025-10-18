@@ -2,31 +2,23 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
   (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
 
-// Browser compatibility check and polyfill
 const isBrowser = typeof window !== 'undefined';
 const supportsFetch = isBrowser && typeof fetch !== 'undefined';
 
-// Enhanced fetch with browser compatibility
 async function enhancedFetch(url: string, options: RequestInit): Promise<Response> {
   if (!supportsFetch) {
     throw new Error('Your browser does not support fetch API. Please upgrade your browser.');
   }
 
-  // Add browser-specific optimizations
   const enhancedOptions: RequestInit = {
     ...options,
-    // Add cache control for better reliability
     cache: 'no-cache',
-    // Ensure proper handling of redirects
     redirect: 'follow',
   };
 
   try {
     return await fetch(url, enhancedOptions);
   } catch (error) {
-    // If the enhanced fetch fails, try with minimal options
-    console.log('🔄 Enhanced fetch failed, trying minimal configuration...');
-    
     const minimalOptions: RequestInit = {
       method: options.method || 'GET',
       headers: {
@@ -325,51 +317,24 @@ class ApiClient {
       }
     }
 
-    // Log the request details for debugging
-    console.log('Making API Request:', {
-      url,
-      method: config.method || 'GET',
-      headers: config.headers,
-      hasBody: !!config.body,
-      bodyType: typeof config.body
-    });
-
     try {
-      console.log('🔄 Starting fetch request to:', url);
-
-      // Create AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ Request timeout, aborting...');
-        controller.abort();
-      }, DEFAULT_TIMEOUT);
+      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
       const response = await enhancedFetch(url, {
         ...config,
         signal: controller.signal,
       });
 
-      console.log('✅ Fetch completed, response status:', response.status, response.statusText);
-
-      // Clear timeout if request completes
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Get response as text first to see what we actually get
         const responseText = await response.text();
-        console.error('API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          url,
-          responseHeaders: Object.fromEntries(response.headers.entries()),
-          responseText: responseText.substring(0, 500) // First 500 chars
-        });
-
         let errorData: ErrorResponse = {};
         try {
           errorData = JSON.parse(responseText);
         } catch {
-          console.error('Failed to parse error response as JSON');
+          // Failed to parse error response as JSON
         }
 
         throw new ApiError(
@@ -381,43 +346,22 @@ class ApiClient {
 
       return await response.json();
     } catch (error: unknown) {
-      console.log('❌ Fetch failed with error:', error);
-
       if (error instanceof ApiError) {
         throw error;
       }
 
-      // Handle timeout specifically
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('⏰ Request was aborted (timeout)');
-        throw new ApiError(
-          'Request timed out. Please try again.',
-          408
-        );
+        throw new ApiError('Request timed out. Please try again.', 408);
       }
 
       if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-        console.error('Network fetch error details:', {
-          error: error.message,
-          stack: error.stack,
-          url,
-          isProductionApi,
-          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side',
-          origin: typeof window !== 'undefined' ? window.location.origin : 'Unknown'
-        });
-        
-        // Implement retry logic for network-related errors
         if (retryCount < maxRetries) {
-          console.log(`🔄 Retrying request (attempt ${retryCount + 1}/${maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
           return this.request<T>(endpoint, options, retryCount + 1);
         }
 
-        // For production APIs, try a different approach
         if (isProductionApi) {
-          // Try with minimal configuration as a last resort
           try {
-            console.log('🔄 Attempting minimal configuration request...');
             const minimalResponse = await fetch(url, {
               method: options.method || 'GET',
               headers: {
@@ -433,7 +377,7 @@ class ApiClient {
               try {
                 errorData = JSON.parse(responseText);
               } catch {
-                console.error('Failed to parse error response as JSON');
+                // Failed to parse error response as JSON
               }
 
               throw new ApiError(
@@ -445,7 +389,6 @@ class ApiClient {
 
             return await minimalResponse.json();
           } catch (minimalError) {
-            console.error('Minimal configuration also failed:', minimalError);
             throw new ApiError(
               'Unable to connect to the server. This appears to be a browser security restriction. Please try:\n1. Refresh the page\n2. Check if your browser is blocking cross-origin requests\n3. Contact support if the problem persists',
               0
@@ -459,52 +402,29 @@ class ApiClient {
         }
       }
 
-      // Check for CORS-related errors
       if (error instanceof TypeError &&
           (error.message.includes('Failed to fetch') ||
            error.message.includes('NetworkError') ||
            error.message.includes('Cross-Origin') ||
            error.message.includes('blocked by CORS policy'))) {
-        console.error('CORS/Network Error Details:', {
-          error: error.message,
-          stack: error.stack,
-          apiUrl: NORMALIZED_API_URL,
-          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side',
-          origin: typeof window !== 'undefined' ? window.location.origin : 'Unknown'
-        });
-
-        // Implement retry logic for CORS-related errors
         if (retryCount < maxRetries) {
-          console.log(`🔄 Retrying request due to CORS issue (attempt ${retryCount + 1}/${maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
           return this.request<T>(endpoint, options, retryCount + 1);
         }
 
-        // For production APIs, provide a more helpful error message
         if (isProductionApi) {
           throw new ApiError(
             'Unable to connect to the server. This appears to be a network connectivity issue. Please:\n1. Check your internet connection\n2. Try refreshing the page\n3. If the problem persists, contact support',
             0
           );
+        } else {
+          throw new ApiError(
+            'Network connection issue detected. This could be due to CORS configuration. Please:\n1. Ensure the backend server is running\n2. Check CORS configuration on the server\n3. Verify the API URL is correct',
+            0
+          );
         }
-
-        // For local development, provide CORS-specific guidance
-        throw new ApiError(
-          'Network connection issue detected. This could be due to CORS configuration. Please:\n1. Ensure the backend server is running\n2. Check CORS configuration on the server\n3. Verify the API URL is correct',
-          0
-        );
       }
 
-      // Log any other unexpected errors for debugging
-      console.error('Unexpected API Error:', {
-        error: error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        apiUrl: NORMALIZED_API_URL,
-        stack: error instanceof Error ? error.stack : undefined,
-        retryCount
-      });
-
-      // Implement retry logic for other network-related errors
       if (retryCount < maxRetries && (
         error instanceof TypeError && (
           error.message.includes('Failed to fetch') ||
@@ -512,8 +432,7 @@ class ApiClient {
           error.message.includes('fetch')
         )
       )) {
-        console.log(`🔄 Retrying request (attempt ${retryCount + 1}/${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
         return this.request<T>(endpoint, options, retryCount + 1);
       }
 
@@ -557,7 +476,7 @@ class ApiClient {
     console.log('FormData entries count:', formData.getAll('cv').length, formData.getAll('project-report').length);
     console.log('Auth headers for upload:', this.getAuthHeaders());
 
-    const url = `${API_BASE_URL}/api/upload`;
+    const url = `${API_BASE_URL}/upload`;
     console.log('Upload URL:', url);
 
     try {
@@ -624,7 +543,7 @@ class ApiClient {
   }
 
   async triggerEvaluation(data: EvaluationRequest): Promise<EvaluationResponse> {
-    return this.request<EvaluationResponse>('/api/evaluate', {
+    return this.request<EvaluationResponse>('/evaluate', {
       method: 'POST',
       body: JSON.stringify(data),
     });
