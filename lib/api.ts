@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = 'https://amangly.web.id'; // Force correct production URL for development
 
 // Ensure URL has proper protocol for browser security
 function normalizeApiUrl(url: string): string {
