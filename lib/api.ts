@@ -10,7 +10,7 @@ function normalizeApiUrl(url: string): string {
 
 const NORMALIZED_API_URL = normalizeApiUrl(API_BASE_URL);
 const UPLOAD_TIMEOUT = 5 * 60 * 1000; // 5 minutes for file upload
-const DEFAULT_TIMEOUT = 30 * 1000; // 30 seconds for other requests
+const DEFAULT_TIMEOUT = 60 * 1000; // 60 seconds for other requests (increased for better reliability)
 
 // Authentication types
 export interface SignUpRequest {
@@ -272,11 +272,25 @@ class ApiClient {
           (error.message.includes('Failed to fetch') ||
            error.message.includes('NetworkError') ||
            error.message.includes('Cross-Origin'))) {
+        console.error('CORS/Network Error Details:', {
+          error: error.message,
+          stack: error.stack,
+          apiUrl: NORMALIZED_API_URL,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side'
+        });
         throw new ApiError(
           'Unable to connect to the API. This might be a CORS configuration issue. Please contact support if the problem persists.',
           0
         );
       }
+
+      // Log any other unexpected errors for debugging
+      console.error('Unexpected API Error:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        apiUrl: NORMALIZED_API_URL,
+        stack: error instanceof Error ? error.stack : undefined
+      });
 
       throw new ApiError(
         error instanceof Error ? error.message : 'An unexpected error occurred',
