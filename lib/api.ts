@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://amangly.web.id'; // Force correct production URL for development
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id';
 
 // Ensure URL has proper protocol for browser security
 function normalizeApiUrl(url: string): string {
@@ -533,27 +533,27 @@ class ApiClient {
 
   // Authentication methods (Better Auth compatible)
   async signUp(data: SignUpRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/sign-up', {
+    return this.request<AuthResponse>('/api/auth/sign-up', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async signIn(data: SignInRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/sign-in', {
+    return this.request<AuthResponse>('/api/auth/sign-in', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async signOut(): Promise<{ message: string; status: string }> {
-    return this.request<{ message: string; status: string }>('/auth/sign-out', {
+    return this.request<{ message: string; status: string }>('/api/auth/sign-out', {
       method: 'POST',
     });
   }
 
   async getCurrentUser(): Promise<{ user: User; status: string }> {
-    return this.request<{ user: User; status: string }>('/auth/session');
+    return this.request<{ user: User; status: string }>('/api/auth/me');
   }
 
   async getUserEvaluations(): Promise<EvaluationResult[]> {
