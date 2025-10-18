@@ -12,21 +12,41 @@ export class ApiDebugger {
       console.log('🔍 Testing connectivity to production API (CORS-safe mode):', apiUrl);
 
       try {
-        // Test with a simple auth request instead of health check
-        const testResponse = await fetch(`${apiUrl}/auth/sign-in`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'test@example.com', password: 'test' }),
-          signal: AbortSignal.timeout(10000),
-          mode: 'cors',
-          credentials: 'omit'
-        });
+        // Try multiple possible endpoints to find one that works
+        const endpoints = ['/health', '/api/auth/session', '/api/auth/sign-in'];
 
-        // Any response (even 401) means the server is reachable
+        for (const endpoint of endpoints) {
+          try {
+            const testResponse = await fetch(`${apiUrl}${endpoint}`, {
+              method: endpoint === '/health' ? 'GET' : 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              body: endpoint !== '/health' ? JSON.stringify({ email: 'test@example.com', password: 'test' }) : undefined,
+              signal: AbortSignal.timeout(5000),
+              mode: 'cors',
+              credentials: 'omit'
+            });
+
+            // Any response (even error codes) means the server is reachable
+            return {
+              success: true,
+              details: `Server reachable via ${endpoint} (${testResponse.status}: ${testResponse.statusText})`
+            };
+          } catch (endpointError) {
+            console.log(`Endpoint ${endpoint} failed, trying next...`);
+            continue;
+          }
+        }
+
+        // If all endpoints failed, return a specific error
         return {
-          success: true,
-          details: `Server reachable (${testResponse.status}: ${testResponse.statusText})`
+          success: false,
+          details: 'Server may not be configured correctly - no auth endpoints found',
+          error: 'No reachable endpoints found'
         };
+
       } catch (error) {
         return {
           success: false,
@@ -84,17 +104,36 @@ API URL: ${apiUrl}
 User Agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side'}
 Timestamp: ${new Date().toISOString()}
 
+Better Auth Configuration:
+- Expected endpoints: /api/auth/sign-in, /api/auth/sign-up, /api/auth/session
+- Alternative endpoints: /health (for connectivity testing)
+
 Troubleshooting Steps:
 1. Check if the API server is running: ${apiUrl}
-2. Verify CORS configuration allows requests from your domain
-3. Check network connection and firewall settings
-4. Ensure SSL certificate is valid (for HTTPS URLs)
-5. Try accessing the API directly in a browser
+2. Verify Better Auth is properly configured on the backend
+3. Check if these endpoints exist:
+   - ${apiUrl}/api/auth/sign-in
+   - ${apiUrl}/api/auth/sign-up
+   - ${apiUrl}/api/auth/session
+4. Verify CORS configuration allows requests from your domain
+5. Check network connection and firewall settings
+6. Ensure SSL certificate is valid (for HTTPS URLs)
+
+Backend Configuration Check:
+- Verify BETTER_AUTH_SECRET is set in backend .env
+- Check BETTER_AUTH_URL matches your frontend domain
+- Ensure Better Auth routes are properly registered
+- Confirm the server is running on the correct port
 
 Common Solutions:
 - Development: Use local server (npm run dev:api or yarn dev:api)
 - Production: Verify server deployment and CORS settings
-- Testing: Check if API endpoint URLs are correct
+- Better Auth: Check /api/auth/* endpoints are accessible
+- Testing: Use curl to test endpoints directly
+
+Example curl commands:
+curl -X GET ${apiUrl}/health
+curl -X POST ${apiUrl}/api/auth/sign-in -H "Content-Type: application/json" -d '{"email":"test@example.com","password":"test"}'
 `;
   }
 

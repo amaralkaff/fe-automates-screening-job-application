@@ -530,29 +530,29 @@ class ApiClient {
     });
   }
 
-  // Authentication methods
+  // Authentication methods (Better Auth compatible)
   async signUp(data: SignUpRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/sign-up', {
+    return this.request<AuthResponse>('/api/auth/sign-up', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async signIn(data: SignInRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/sign-in', {
+    return this.request<AuthResponse>('/api/auth/sign-in', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async signOut(): Promise<{ message: string; status: string }> {
-    return this.request<{ message: string; status: string }>('/auth/sign-out', {
+    return this.request<{ message: string; status: string }>('/api/auth/sign-out', {
       method: 'POST',
     });
   }
 
   async getCurrentUser(): Promise<{ user: User; status: string }> {
-    return this.request<{ user: User; status: string }>('/auth/me');
+    return this.request<{ user: User; status: string }>('/api/auth/session');
   }
 
   async getUserEvaluations(): Promise<EvaluationResult[]> {
