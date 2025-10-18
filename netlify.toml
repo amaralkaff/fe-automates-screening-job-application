@@ -11,7 +11,7 @@
   status = 200
 
 [context.production.environment]
-  NEXT_PUBLIC_API_URL = "https://34.101.92.66"
+  NEXT_PUBLIC_API_URL = "https://amangly.web.id"
 
 [context.deploy-preview.environment]
-  NEXT_PUBLIC_API_URL = "https://34.101.92.66"
+  NEXT_PUBLIC_API_URL = "https://amangly.web.id"
