@@ -8,7 +8,6 @@ import { Alert } from '@/components/retroui/Alert';
 import {
   User,
   FileText,
-  Brain,
   Download,
   Share2,
   CheckCircle,
@@ -24,7 +23,7 @@ interface EvaluationResultsProps {
 
 interface ScoreBreakdownProps {
   title: string;
-  icon: React.ReactNode;
+  // icon: React.ReactNode;
   scores: {
     label: string;
     value: number;
@@ -35,7 +34,7 @@ interface ScoreBreakdownProps {
   maxScore: number;
 }
 
-function ScoreBreakdown({ title, icon, scores, overallScore, maxScore }: ScoreBreakdownProps) {
+function ScoreBreakdown({ title, scores, overallScore, maxScore }: ScoreBreakdownProps) {
   const getScoreColor = (score: number) => {
     if (score >= 4.5) return 'text-green-600';
     if (score >= 3.5) return 'text-blue-600';
@@ -56,7 +55,7 @@ function ScoreBreakdown({ title, icon, scores, overallScore, maxScore }: ScoreBr
     <Card>
       <Card.Header>
         <Card.Title className="flex items-center space-x-2">
-          {icon}
+          {/* {icon} */}
           <span>{title}</span>
           <Badge variant="outline" className={`ml-auto ${getScoreColor(overallScore)}`}>
             {overallScore.toFixed(1)}/{maxScore} - {getScoreLabel(overallScore)}
@@ -375,47 +374,47 @@ ${result.result?.overallSummary || 'Summary not available'}
       {/* Quick Stats */}
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-center">Key Metrics</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <Card.Content className="text-center p-4">
-              <div className="text-2xl font-bold text-blue-600">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="overflow-hidden">
+            <Card.Content className="text-center p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {result.result ? (result.result.finalScore.cvScore * 20).toFixed(0) : '0'}%
               </div>
-              <div className="text-sm text-muted-foreground">CV Match Rate</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">CV Match Rate</div>
             </Card.Content>
           </Card>
-          <Card>
-            <Card.Content className="text-center p-4">
-              <div className="text-2xl font-bold text-green-600">
+          <Card className="overflow-hidden">
+            <Card.Content className="text-center p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {result.result ? result.result.cvEvaluation.technicalSkillsMatch.score.toFixed(1) : '0'}
               </div>
-              <div className="text-sm text-muted-foreground">Technical Skills</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Technical Skills</div>
             </Card.Content>
           </Card>
-          <Card>
-            <Card.Content className="text-center p-4">
-              <div className="text-2xl font-bold text-purple-600">
+          <Card className="overflow-hidden">
+            <Card.Content className="text-center p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">
                 {result.result ? result.result.finalScore.projectScore.toFixed(1) : '0'}
               </div>
-              <div className="text-sm text-muted-foreground">Project Score</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Project Score</div>
             </Card.Content>
           </Card>
-          <Card>
-            <Card.Content className="text-center p-4">
-              <div className="text-2xl font-bold text-orange-600">
+          <Card className="overflow-hidden">
+            <Card.Content className="text-center p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-orange-600">
                 {result.result ? result.result.projectEvaluation.codeQuality.score.toFixed(1) : '0'}
               </div>
-              <div className="text-sm text-muted-foreground">Code Quality</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Code Quality</div>
             </Card.Content>
           </Card>
         </div>
       </div>
 
       {/* Score Breakdowns */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <ScoreBreakdown
           title="CV Evaluation"
-          icon={<User className="h-6 w-6" />}
+          // icon={<User className="h-6 w-6" />}
           scores={cvScores}
           overallScore={result.result ? result.result.finalScore.cvScore : 0}
           maxScore={5}
@@ -423,7 +422,7 @@ ${result.result?.overallSummary || 'Summary not available'}
 
         <ScoreBreakdown
           title="Project Evaluation"
-          icon={<FileText className="h-6 w-6" />}
+          // icon={<FileText className="h-6 w-6" />}
           scores={projectScores}
           overallScore={result.result ? result.result.finalScore.projectScore : 0}
           maxScore={5}

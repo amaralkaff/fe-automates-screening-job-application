@@ -5,7 +5,7 @@ import { Button } from '@/components/retroui/Button';
 import { Input } from '@/components/retroui/Input';
 import { Label } from '@/components/retroui/Label';
 import { Badge } from '@/components/retroui/Badge';
-import { FileText, Loader2, CheckCircle, ArrowLeft, Brain } from 'lucide-react';
+import { FileText, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface JobTitleStepProps {
   jobTitle: string;

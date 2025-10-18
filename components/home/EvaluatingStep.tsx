@@ -1,7 +1,6 @@
 'use client';
 
 import { Card } from '@/components/retroui/Card';
-import { Brain } from 'lucide-react';
 import EvaluationTracker from '@/components/EvaluationTracker';
 import { EvaluationResult } from '@/lib/api';
 

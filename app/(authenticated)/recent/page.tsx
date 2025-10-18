@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
-import { AlertTriangle, BarChart3, Brain, Calendar, Eye } from 'lucide-react';
+import { AlertTriangle, BarChart3, Calendar, Eye } from 'lucide-react';
 import { Card } from '@/components/retroui/Card';
 import { Button } from '@/components/retroui/Button';
 import { Badge } from '@/components/retroui/Badge';
@@ -69,27 +69,27 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
 
   return (
     <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onSelect}>
-      <Card.Content className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+      <Card.Content className="p-4 sm:p-6">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               {/* <Brain className="h-6 w-6 text-blue-600" /> */}
               <div>
-                <h3 className="font-semibold text-lg">Evaluation Report</h3>
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
+                <h3 className="font-semibold text-base sm:text-lg">Evaluation Report</h3>
+                <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-muted-foreground">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span>{formatDate(evaluation.createdAt)}</span>
                 </div>
               </div>
             </div>
-            <Badge className={getStatusColor(evaluation.status)}>
+            <Badge className={`${getStatusColor(evaluation.status)} text-xs sm:text-sm`}>
               {evaluation.status.charAt(0).toUpperCase() + evaluation.status.slice(1)}
             </Badge>
           </div>
 
           {evaluation.status === 'processing' && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>Progress</span>
                 <span>{Math.round(evaluation.progress)}%</span>
               </div>
@@ -104,25 +104,25 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
 
           {evaluation.result && (
             <div className="space-y-3">
-              <div className={`p-3 rounded-lg border ${getRecommendationColor(overallScore)}`}>
-                <span className="font-medium">{getRecommendation(overallScore)}</span>
+              <div className={`p-2 sm:p-3 rounded-lg border ${getRecommendationColor(overallScore)}`}>
+                <span className="font-medium text-xs sm:text-sm">{getRecommendation(overallScore)}</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 <div className="text-center">
-                  <div className={`text-2xl font-bold ${getScoreColor(overallScore)}`}>
+                  <div className={`text-lg sm:text-2xl font-bold ${getScoreColor(overallScore)}`}>
                     {overallScore.toFixed(1)}
                   </div>
                   <div className="text-xs text-muted-foreground">Overall</div>
                 </div>
                 <div className="text-center">
-                  <div className={`text-xl font-semibold ${getScoreColor(cvScore)}`}>
+                  <div className={`text-base sm:text-xl font-semibold ${getScoreColor(cvScore)}`}>
                     {cvScore.toFixed(1)}
                   </div>
                   <div className="text-xs text-muted-foreground">CV Score</div>
                 </div>
                 <div className="text-center">
-                  <div className={`text-xl font-semibold ${getScoreColor(projectScore)}`}>
+                  <div className={`text-base sm:text-xl font-semibold ${getScoreColor(projectScore)}`}>
                     {projectScore.toFixed(1)}
                   </div>
                   <div className="text-xs text-muted-foreground">Project</div>
@@ -141,8 +141,8 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
           )}
 
           <div className="flex justify-center">
-            <Button variant="outline" size="sm" className="w-full">
-              <Eye className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="w-full text-xs sm:text-sm h-8 sm:h-9">
+              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               {evaluation.status === 'completed' ? 'View Full Report' :
                evaluation.status === 'processing' ? 'View Progress' : 'View Details'}
             </Button>
@@ -237,21 +237,23 @@ export default function RecentPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex justify-center">
         <div className="max-w-6xl w-full">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
             <div>
-              <h2 className="text-2xl font-bold flex items-center space-x-3">
-                <BarChart3 className="h-7 w-7" />
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center space-x-2 sm:space-x-3">
+                <BarChart3 className="h-5 w-5 sm:h-7 sm:w-7" />
                 <span>Recent Evaluations</span>
               </h2>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
                 Your job application evaluation history ({evaluations.length} evaluations)
               </p>
             </div>
             <Link href="/">
-              <Button>New Evaluation</Button>
+              <Button size="sm" className="w-full sm:w-auto">
+                New Evaluation
+              </Button>
             </Link>
           </div>
         </div>
@@ -261,14 +263,14 @@ export default function RecentPage() {
         <div className="max-w-6xl w-full">
           <Suspense
             fallback={
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <EvaluationCardSkeleton key={i} />
                 ))}
               </div>
             }
           >
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {evaluations.map((evaluation) => (
                 <EvaluationSummary
                   key={evaluation.id}
