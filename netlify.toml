@@ -19,8 +19,9 @@
   force = true
   headers = {X-Forwarded-Host = "amangly.web.id"}
 
-[context.production.environment]
-  NEXT_PUBLIC_API_URL = "https://amangly.web.id"
+# Remove NEXT_PUBLIC_API_URL to allow frontend to use relative URLs
+# [context.production.environment]
+#   NEXT_PUBLIC_API_URL = "https://amangly.web.id"
 
-[context.deploy-preview.environment]
-  NEXT_PUBLIC_API_URL = "https://amangly.web.id"
+# [context.deploy-preview.environment]
+#   NEXT_PUBLIC_API_URL = "https://amangly.web.id"

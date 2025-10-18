@@ -1,5 +1,6 @@
 // Use relative URLs for Netlify proxy, fallback to absolute for local development
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
 
 // Browser compatibility check and polyfill
 const isBrowser = typeof window !== 'undefined';
@@ -84,7 +85,9 @@ async function checkApiConnectivity(url: string): Promise<boolean> {
   }
 }
 
-const NORMALIZED_API_URL = normalizeApiUrl(API_BASE_URL);
+// For Netlify deployment, use empty base URL to leverage proxy
+// For local development, use the configured API URL
+const NORMALIZED_API_URL = API_BASE_URL ? normalizeApiUrl(API_BASE_URL) : '';
 const UPLOAD_TIMEOUT = 5 * 60 * 1000; // 5 minutes for file upload
 const DEFAULT_TIMEOUT = 60 * 1000; // 60 seconds for other requests (increased for better reliability)
 
@@ -268,7 +271,11 @@ class ApiClient {
     const maxRetries = 2; // Allow up to 2 retries
 
     // Skip connectivity check for production APIs to avoid CORS issues
-    const isProductionApi = NORMALIZED_API_URL.includes('https://') && !NORMALIZED_API_URL.includes('localhost');
+    const isProductionApi = !NORMALIZED_API_URL.includes('localhost') &&
+      (typeof window !== 'undefined' ?
+        !window.location.hostname.includes('localhost') &&
+        !window.location.hostname.includes('127.0.0.1') :
+        false);
     const isAuthRequest = endpoint.includes('/auth/');
     const shouldCheckConnectivity = isAuthRequest && !this.hasConnectivityBeenChecked && !isProductionApi;
 
