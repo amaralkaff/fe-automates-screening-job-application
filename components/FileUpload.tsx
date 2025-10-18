@@ -128,7 +128,7 @@ export default function FileUpload({ onFilesChange, disabled = false }: FileUplo
               <Label htmlFor="cv-upload" className="text-sm sm:text-base font-semibold">
                 CV/Resume *
                 <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2 block sm:inline">
-                  (PDF format)
+                  (PDF format, max 5MB)
                 </span>
               </Label>
 
@@ -188,7 +188,7 @@ export default function FileUpload({ onFilesChange, disabled = false }: FileUplo
               <Label htmlFor="project-upload" className="text-sm sm:text-base font-semibold">
                 Project Report *
                 <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2 block sm:inline">
-                  (PDF format)
+                  (PDF format, max 5MB)
                 </span>
               </Label>
 
