@@ -6,8 +6,6 @@ import { Progress } from '@/components/retroui/Progress';
 import { Button } from '@/components/retroui/Button';
 import { Alert } from '@/components/retroui/Alert';
 import {
-  Star,
-  TrendingUp,
   User,
   FileText,
   Brain,
@@ -53,13 +51,7 @@ function ScoreBreakdown({ title, icon, scores, overallScore, maxScore }: ScoreBr
     return 'Poor';
   };
 
-  const getProgressColor = (score: number) => {
-    if (score >= 4.5) return 'bg-green-500';
-    if (score >= 3.5) return 'bg-blue-500';
-    if (score >= 2.5) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
+  
   return (
     <Card>
       <Card.Header>
@@ -194,8 +186,6 @@ export default function EvaluationResults({ result, onNewEvaluation }: Evaluatio
   ] : [];
 
   const getOverallRecommendation = () => {
-    const cvScore = result.result ? result.result.finalScore.cvScore : 0;
-    const projectScore = result.result ? result.result.finalScore.projectScore : 0;
     const average = result.result ? result.result.finalScore.overallScore : 0;
 
     if (average >= 4.0) {

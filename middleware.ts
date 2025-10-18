@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function middleware() {
   // For now, allow all requests to pass through
   // The client-side auth checks will handle redirects
   return NextResponse.next();

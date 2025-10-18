@@ -31,8 +31,9 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
 
     try {
       await signIn(formData);
-    } catch (error: any) {
-      setError(error.message || 'Failed to sign in. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign in. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +118,7 @@ export default function LoginForm({ onToggleMode }: LoginFormProps) {
 
           <div className="text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <button
                 type="button"
                 onClick={onToggleMode}

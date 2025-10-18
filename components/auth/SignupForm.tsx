@@ -32,8 +32,9 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
 
     try {
       await signUp(formData);
-    } catch (error: any) {
-      setError(error.message || 'Failed to create account. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -6,12 +6,9 @@ import { Button } from '@/components/retroui/Button';
 import { Badge } from '@/components/retroui/Badge';
 import { Alert } from '@/components/retroui/Alert';
 import {
-  Clock,
   FileText,
-  User,
   Brain,
   TrendingUp,
-  CheckCircle,
   AlertTriangle,
   Eye,
   Calendar,
@@ -198,7 +195,7 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
 }
 
 export default function RecentEvaluations({ onSelectEvaluation, onNewEvaluation }: RecentEvaluationsProps) {
-  const { user } = useAuth();
+  const { } = useAuth();
   const [evaluations, setEvaluations] = useState<EvaluationResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -213,8 +210,9 @@ export default function RecentEvaluations({ onSelectEvaluation, onNewEvaluation 
       setError('');
       const userEvaluations = await apiClient.getUserEvaluations();
       setEvaluations(userEvaluations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch evaluations');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch evaluations';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -276,7 +274,7 @@ export default function RecentEvaluations({ onSelectEvaluation, onNewEvaluation 
                 <BarChart3 className="h-12 w-12 text-gray-600 mx-auto" />
                 <h2 className="text-2xl font-bold">No Evaluations Yet</h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  You haven't completed any job application evaluations yet. Start your first evaluation to see your results here.
+                  You haven&apos;t completed any job application evaluations yet. Start your first evaluation to see your results here.
                 </p>
               </div>
 

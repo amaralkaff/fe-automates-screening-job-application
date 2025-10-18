@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient, User, AuthResponse, SignInRequest, SignUpRequest } from './api';
+import { apiClient, User, SignInRequest, SignUpRequest } from './api';
 
 interface AuthContextType {
   user: User | null;

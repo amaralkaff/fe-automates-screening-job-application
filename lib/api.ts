@@ -102,13 +102,20 @@ export interface EvaluationResult {
   updatedAt: string;
 }
 
+interface ErrorResponse {
+  error?: string;
+  message?: string;
+  details?: string;
+  [key: string]: unknown;
+}
+
 export class ApiError extends Error {
   public code?: string;
 
   constructor(
     message: string,
     public status: number,
-    public response?: any
+    public response?: ErrorResponse
   ) {
     super(message);
     this.name = 'ApiError';
@@ -215,28 +222,28 @@ class ApiClient {
           responseText: responseText.substring(0, 500) // First 500 chars
         });
 
-        let errorData: any = {};
+        let errorData: ErrorResponse = {};
         try {
           errorData = JSON.parse(responseText);
-        } catch (e) {
+        } catch {
           console.error('Failed to parse error response as JSON');
         }
 
         throw new ApiError(
-          (errorData as any).error || (errorData as any).message || `HTTP error! status: ${response.status}`,
+          errorData.error || errorData.message || `HTTP error! status: ${response.status}`,
           response.status,
           errorData
         );
       }
 
       return await response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ApiError) {
         throw error;
       }
 
       // Handle timeout specifically
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new ApiError(
           'Request timed out. Please try again.',
           408
@@ -338,11 +345,11 @@ class ApiClient {
       const result = await response.json();
       console.log('Upload successful:', result);
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
 
       // Handle timeout specifically
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new ApiError(
           'Upload is taking too long. The document may be too large or complex. Try uploading a smaller document.',
           408
@@ -378,11 +385,11 @@ class ApiClient {
           if (result.status === 'completed') {
             resolve(result);
           } else if (result.status === 'failed') {
-            reject(new ApiError('Evaluation failed', 500, result));
+            reject(new ApiError('Evaluation failed', 500, { error: result.error || 'Evaluation failed' }));
           } else {
             setTimeout(poll, interval);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           reject(error);
         }
       };

@@ -4,10 +4,8 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Card } from '@/components/retroui/Card';
 import { Button } from '@/components/retroui/Button';
-import { Input } from '@/components/retroui/Input';
 import { Label } from '@/components/retroui/Label';
 import { Alert } from '@/components/retroui/Alert';
-import { Badge } from '@/components/retroui/Badge';
 import { Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface FileUploadProps {

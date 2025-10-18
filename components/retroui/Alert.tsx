@@ -35,15 +35,12 @@ const Alert = ({ className, variant, status, ...props }: IAlertProps) => (
 );
 Alert.displayName = "Alert";
 
-interface IAlertTitleProps extends HtmlHTMLAttributes<HTMLHeadingElement> {}
-const AlertTitle = ({ className, ...props }: IAlertTitleProps) => (
+const AlertTitle = ({ className, ...props }: HtmlHTMLAttributes<HTMLHeadingElement>) => (
   <Text as="h5" className={cn(className)} {...props} />
 );
 AlertTitle.displayName = "AlertTitle";
 
-interface IAlertDescriptionProps
-  extends HtmlHTMLAttributes<HTMLParagraphElement> {}
-const AlertDescription = ({ className, ...props }: IAlertDescriptionProps) => (
+const AlertDescription = ({ className, ...props }: HtmlHTMLAttributes<HTMLParagraphElement>) => (
   <div className={cn("text-muted-foreground", className)} {...props} />
 );
 

@@ -68,7 +68,7 @@ export default function RateLimitError({ error, onRetry, onViewHistory }: RateLi
               <Card.Title className="text-xl">Evaluation Limit Reached</Card.Title>
             </div>
             <p className="text-muted-foreground">
-              You've reached your evaluation limit for this {period}
+              You&apos;ve reached your evaluation limit for this {period}
             </p>
           </div>
         </Card.Header>
