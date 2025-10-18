@@ -494,7 +494,7 @@ class ApiClient {
   }
 
   async getJobStatus(jobId: string): Promise<EvaluationResult> {
-    return this.request<EvaluationResult>(`/api/status/${jobId}`);
+    return this.request<EvaluationResult>(`/status/${jobId}`);
   }
 
   async pollJobStatus(
@@ -550,12 +550,12 @@ class ApiClient {
   }
 
   async getUserEvaluations(): Promise<EvaluationResult[]> {
-    const response = await this.request<{jobs: EvaluationResult[]}>('/api/jobs');
+    const response = await this.request<{jobs: EvaluationResult[]}>('/jobs');
     return response.jobs;
   }
 
   async getEvaluationById(evaluationId: string): Promise<EvaluationResult> {
-    return this.request<EvaluationResult>(`/api/status/${evaluationId}`);
+    return this.request<EvaluationResult>(`/status/${evaluationId}`);
   }
 }
 
