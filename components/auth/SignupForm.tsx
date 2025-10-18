@@ -9,7 +9,6 @@ import { Alert } from '@/components/retroui/Alert';
 import { Eye, EyeOff, Mail, Lock, User, RefreshCw } from 'lucide-react';
 import { SignUpRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { ApiDebugger } from '@/lib/debug';
 
 interface SignupFormProps {
   onToggleMode: () => void;
@@ -26,7 +25,7 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDebugMode, setIsDebugMode] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
+  const [connectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
 
 
   const handleSubmit = async (e: React.FormEvent) => {

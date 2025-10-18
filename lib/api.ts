@@ -18,7 +18,7 @@ async function enhancedFetch(url: string, options: RequestInit): Promise<Respons
 
   try {
     return await fetch(url, enhancedOptions);
-  } catch (error) {
+  } catch {
     const minimalOptions: RequestInit = {
       method: options.method || 'GET',
       headers: {
@@ -42,14 +42,11 @@ function normalizeApiUrl(url: string): string {
 
 // Enhanced connectivity check with fallback and better error handling
 async function checkApiConnectivity(url: string): Promise<boolean> {
-  // For production URLs, skip connectivity check to avoid CORS issues
   if (url.includes('https://') && !url.includes('localhost')) {
-    console.log('🔍 Skipping connectivity check for production API:', url);
-    return true; // Assume production APIs are reachable
+    return true;
   }
 
   try {
-    console.log('🔍 Checking API connectivity to:', url);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -62,26 +59,15 @@ async function checkApiConnectivity(url: string): Promise<boolean> {
     });
 
     clearTimeout(timeoutId);
-    console.log('✅ API connectivity check passed:', response.status);
     return response.ok;
-  } catch (error) {
-    console.warn('❌ API connectivity check failed:', error);
-    
-    // For local development, be more strict about connectivity
-    if (url.includes('localhost')) {
-      return false;
-    }
-    
-    // For production, be optimistic and let the actual request determine if there's an issue
-    return true;
+  } catch {
+    return url.includes('localhost') ? false : true;
   }
 }
 
-// For Netlify deployment, use empty base URL to leverage proxy
-// For local development, use the configured API URL
 const NORMALIZED_API_URL = API_BASE_URL ? normalizeApiUrl(API_BASE_URL) : '';
-const UPLOAD_TIMEOUT = 5 * 60 * 1000; // 5 minutes for file upload
-const DEFAULT_TIMEOUT = 60 * 1000; // 60 seconds for other requests (increased for better reliability)
+const UPLOAD_TIMEOUT = 5 * 60 * 1000;
+const DEFAULT_TIMEOUT = 60 * 1000;
 
 // Authentication types
 export interface SignUpRequest {
@@ -295,9 +281,7 @@ class ApiClient {
       ...options,
     };
 
-    // Since backend has simple CORS (origin: () => true), we can use a clean configuration
     if (isProductionApi) {
-      // Clean, minimal configuration for production APIs
       config = {
         method: options.method || 'GET',
         headers: {
@@ -311,7 +295,6 @@ class ApiClient {
         credentials: 'omit',
       };
       
-      // Remove body for GET requests
       if (config.method === 'GET') {
         delete config.body;
       }
@@ -388,7 +371,7 @@ class ApiClient {
             }
 
             return await minimalResponse.json();
-          } catch (minimalError) {
+          } catch {
             throw new ApiError(
               'Unable to connect to the server. This appears to be a browser security restriction. Please try:\n1. Refresh the page\n2. Check if your browser is blocking cross-origin requests\n3. Contact support if the problem persists',
               0
@@ -444,21 +427,6 @@ class ApiClient {
   }
 
   async uploadDocuments(cvFile: File, projectReportFile: File): Promise<UploadResponse> {
-    console.log('=== Starting File Upload ===');
-    console.log('CV File:', {
-      name: cvFile.name,
-      size: cvFile.size,
-      type: cvFile.type,
-      lastModified: cvFile.lastModified
-    });
-    console.log('Project File:', {
-      name: projectReportFile.name,
-      size: projectReportFile.size,
-      type: projectReportFile.type,
-      lastModified: projectReportFile.lastModified
-    });
-
-    // Check file extensions and names as fallback
     const cvName = cvFile.name.toLowerCase();
     const projectName = projectReportFile.name.toLowerCase();
 
@@ -473,47 +441,27 @@ class ApiClient {
     formData.append('cv', cvFile);
     formData.append('project-report', projectReportFile);
 
-    console.log('FormData entries count:', formData.getAll('cv').length, formData.getAll('project-report').length);
-    console.log('Auth headers for upload:', this.getAuthHeaders());
-
     const url = `${API_BASE_URL}/upload`;
-    console.log('Upload URL:', url);
 
     try {
-      console.log('Making fetch request...');
-
-      // Create an AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, UPLOAD_TIMEOUT);
+      const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT);
 
       const response = await fetch(url, {
         method: 'POST',
         body: formData,
         signal: controller.signal,
         headers: this.getAuthHeaders(),
-        mode: 'cors', // Explicitly set CORS mode
-        credentials: 'same-origin', // More permissive credentials policy
+        mode: 'cors',
+        credentials: 'same-origin',
         referrerPolicy: 'no-referrer-when-downgrade',
-        // Don't set Content-Type header for FormData - let browser set it with boundary
       });
 
-      // Clear timeout if request completes
       clearTimeout(timeoutId);
-
-      console.log('Response received:', response.status, response.statusText);
 
       if (!response.ok) {
         const responseText = await response.text();
-        console.error('Upload failed - Full error details:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          responseText: responseText
-        });
 
-        // Check for specific known errors
         if (responseText.includes('BatchEmbedContentsRequest.requests') || responseText.includes('at most 100 requests')) {
           throw new ApiError(
             'The document is too large or complex for processing. Try uploading a smaller document or split it into multiple parts.',
@@ -525,12 +473,8 @@ class ApiClient {
       }
 
       const result = await response.json();
-      console.log('Upload successful:', result);
       return result;
     } catch (error: unknown) {
-      console.error('Upload error:', error);
-
-      // Handle timeout specifically
       if (error instanceof Error && error.name === 'AbortError') {
         throw new ApiError(
           'Upload is taking too long. The document may be too large or complex. Try uploading a smaller document.',
