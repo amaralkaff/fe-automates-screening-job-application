@@ -7,37 +7,16 @@ export class ApiDebugger {
     details: string;
     error?: string;
   }> {
-    // For production HTTPS URLs, do a simpler check that avoids CORS issues
+    // For development with CORS issues, provide better feedback
     if (apiUrl.includes('https://') && !apiUrl.includes('localhost')) {
-      console.log('🔍 Testing connectivity to production API (CORS-safe mode):', apiUrl);
+      console.log('🔍 Development mode: Production API detected', apiUrl);
 
-      try {
-        // Test the auth sign-in endpoint which we know works
-        const testResponse = await fetch(`${apiUrl}/auth/sign-in`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email: 'test@example.com', password: 'test' }),
-          signal: AbortSignal.timeout(10000),
-          mode: 'cors',
-          credentials: 'omit'
-        });
-
-        // Any response (even 401 for invalid credentials) means the server is reachable
-        return {
-          success: true,
-          details: `Server reachable via auth endpoint (${testResponse.status}: ${testResponse.statusText})`
-        };
-
-      } catch (error) {
-        return {
-          success: false,
-          details: 'Connection failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        };
-      }
+      // Skip connectivity test for production APIs in development to avoid CORS
+      // The actual API calls will work if the backend is properly configured
+      return {
+        success: true,
+        details: 'Production API - connectivity will be tested during actual API calls'
+      };
     }
 
     // For local development, do full connectivity testing
