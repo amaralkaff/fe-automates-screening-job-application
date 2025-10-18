@@ -5,10 +5,19 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Remove the API redirect to allow direct calls to external API
+# [[redirects]]
+#   from = "/api/*"
+#   to = "/.netlify/functions/:splat"
+#   status = 200
+
+# Add proxy redirect for external API
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "https://amangly.web.id/:splat"
   status = 200
+  force = true
+  headers = {X-Forwarded-Host = "amangly.web.id"}
 
 [context.production.environment]
   NEXT_PUBLIC_API_URL = "https://amangly.web.id"

@@ -29,7 +29,8 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
 
   const checkConnection = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id';
+    // Use relative URL for production, absolute for local development
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
     setConnectionStatus('checking');
 
     const result = await ApiDebugger.testConnectivity(apiUrl);
@@ -49,8 +50,8 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
 
     try {
       // For production APIs, skip connectivity check to avoid CORS issues
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id';
-      const isProductionApi = apiUrl.includes('https://') && !apiUrl.includes('localhost');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
+      const isProductionApi = !apiUrl.includes('localhost');
       
       if (!isProductionApi) {
         const isConnected = await checkConnection();
@@ -215,7 +216,7 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
                   </div>
                 </div>
                 <div>
-                  <span className="font-semibold">API URL:</span> {process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id'}
+                  <span className="font-semibold">API URL:</span> {process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://amangly.web.id')}
                 </div>
                 <button
                   type="button"
