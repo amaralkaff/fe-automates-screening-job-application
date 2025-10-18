@@ -255,11 +255,12 @@ class ApiClient {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...this.getAuthHeaders(),
         ...options.headers,
       },
       mode: 'cors', // Explicitly set CORS mode
-      credentials: 'same-origin', // More permissive credentials policy
+      credentials: 'include', // Include credentials for cross-origin requests
       ...options,
     };
 
