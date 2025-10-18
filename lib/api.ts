@@ -8,6 +8,44 @@ function normalizeApiUrl(url: string): string {
   return url;
 }
 
+// Enhanced connectivity check with fallback and better error handling
+async function checkApiConnectivity(url: string): Promise<boolean> {
+  try {
+    console.log('🔍 Checking API connectivity to:', url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Increased to 10 seconds
+
+    const response = await fetch(`${url}/health`, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
+      mode: 'cors', // Explicitly set CORS mode
+      credentials: 'omit' // Don't send credentials for health check
+    });
+
+    clearTimeout(timeoutId);
+    console.log('✅ API connectivity check passed:', response.status);
+    return response.ok;
+  } catch (error) {
+    console.warn('❌ API connectivity check failed:', error);
+
+    // Log more detailed error information for debugging
+    if (error instanceof Error) {
+      console.error('Connectivity check error details:', {
+        name: error.name,
+        message: error.message,
+        url,
+        timestamp: new Date().toISOString(),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side'
+      });
+    }
+
+    // Don't fail completely on connectivity check - let the actual request determine if there's an issue
+    // This prevents false negatives that can occur due to browser security policies
+    return true; // Optimistic approach - let the actual API call fail if there's a real problem
+  }
+}
+
 const NORMALIZED_API_URL = normalizeApiUrl(API_BASE_URL);
 const UPLOAD_TIMEOUT = 5 * 60 * 1000; // 5 minutes for file upload
 const DEFAULT_TIMEOUT = 60 * 1000; // 60 seconds for other requests (increased for better reliability)
@@ -165,6 +203,7 @@ export class ApiError extends Error {
 
 class ApiClient {
   private authToken: string | null = null;
+  private hasConnectivityBeenChecked = false;
 
   constructor(authToken: string | null = null) {
     this.authToken = authToken;
@@ -184,9 +223,27 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryCount: number = 0
   ): Promise<T> {
     const url = `${NORMALIZED_API_URL}${endpoint}`;
+    const maxRetries = 2; // Allow up to 2 retries
+
+    // Skip connectivity check for non-critical requests or when already checked
+    const isAuthRequest = endpoint.includes('/auth/');
+    const shouldCheckConnectivity = isAuthRequest && !this.hasConnectivityBeenChecked;
+
+    if (shouldCheckConnectivity) {
+      const isReachable = await checkApiConnectivity(NORMALIZED_API_URL);
+      if (!isReachable) {
+        console.error('🚫 API server is unreachable:', NORMALIZED_API_URL);
+        throw new ApiError(
+          'Unable to connect to the server. Please check your internet connection and try again. If the problem persists, please contact support.',
+          0
+        );
+      }
+      this.hasConnectivityBeenChecked = true;
+    }
 
     const config: RequestInit = {
       headers: {
@@ -194,6 +251,8 @@ class ApiClient {
         ...this.getAuthHeaders(),
         ...options.headers,
       },
+      mode: 'cors', // Explicitly set CORS mode
+      credentials: 'same-origin', // More permissive credentials policy
       ...options,
     };
 
@@ -207,16 +266,23 @@ class ApiClient {
     });
 
     try {
+      console.log('🔄 Starting fetch request to:', url);
+
       // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
+        console.log('⏰ Request timeout, aborting...');
         controller.abort();
       }, DEFAULT_TIMEOUT);
 
       const response = await fetch(url, {
         ...config,
         signal: controller.signal,
+        // Add additional CORS headers to help with browser security
+        referrerPolicy: 'no-referrer-when-downgrade',
       });
+
+      console.log('✅ Fetch completed, response status:', response.status, response.statusText);
 
       // Clear timeout if request completes
       clearTimeout(timeoutId);
@@ -248,12 +314,15 @@ class ApiClient {
 
       return await response.json();
     } catch (error: unknown) {
+      console.log('❌ Fetch failed with error:', error);
+
       if (error instanceof ApiError) {
         throw error;
       }
 
       // Handle timeout specifically
       if (error instanceof Error && error.name === 'AbortError') {
+        console.log('⏰ Request was aborted (timeout)');
         throw new ApiError(
           'Request timed out. Please try again.',
           408
@@ -262,7 +331,7 @@ class ApiClient {
 
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new ApiError(
-          'Network error. Please check your connection and try again.',
+          'Network error. Please check your internet connection and try again. If the problem persists, the server may be temporarily unavailable.',
           0
         );
       }
@@ -271,15 +340,19 @@ class ApiClient {
       if (error instanceof TypeError &&
           (error.message.includes('Failed to fetch') ||
            error.message.includes('NetworkError') ||
-           error.message.includes('Cross-Origin'))) {
+           error.message.includes('Cross-Origin') ||
+           error.message.includes('blocked by CORS policy'))) {
         console.error('CORS/Network Error Details:', {
           error: error.message,
           stack: error.stack,
           apiUrl: NORMALIZED_API_URL,
-          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side'
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side',
+          origin: typeof window !== 'undefined' ? window.location.origin : 'Unknown'
         });
+
+        // Provide a more actionable error message for CORS issues
         throw new ApiError(
-          'Unable to connect to the API. This might be a CORS configuration issue. Please contact support if the problem persists.',
+          'Network connection issue detected. This could be due to browser security policies or CORS configuration. Please try:\n1. Refresh the page and try again\n2. Check your browser console for more details\n3. Contact support if the problem persists',
           0
         );
       }
@@ -289,8 +362,22 @@ class ApiClient {
         error: error,
         message: error instanceof Error ? error.message : 'Unknown error',
         apiUrl: NORMALIZED_API_URL,
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        retryCount
       });
+
+      // Implement retry logic for network-related errors
+      if (retryCount < maxRetries && (
+        error instanceof TypeError && (
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('fetch')
+        )
+      )) {
+        console.log(`🔄 Retrying request (attempt ${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return this.request<T>(endpoint, options, retryCount + 1);
+      }
 
       throw new ApiError(
         error instanceof Error ? error.message : 'An unexpected error occurred',
@@ -349,6 +436,9 @@ class ApiClient {
         body: formData,
         signal: controller.signal,
         headers: this.getAuthHeaders(),
+        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'same-origin', // More permissive credentials policy
+        referrerPolicy: 'no-referrer-when-downgrade',
         // Don't set Content-Type header for FormData - let browser set it with boundary
       });
 

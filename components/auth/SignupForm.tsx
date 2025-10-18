@@ -6,9 +6,10 @@ import { Button } from '@/components/retroui/Button';
 import { Input } from '@/components/retroui/Input';
 import { Label } from '@/components/retroui/Label';
 import { Alert } from '@/components/retroui/Alert';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, RefreshCw } from 'lucide-react';
 import { SignUpRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { ApiDebugger } from '@/lib/debug';
 
 interface SignupFormProps {
   onToggleMode: () => void;
@@ -24,6 +25,22 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDebugMode, setIsDebugMode] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
+
+  const checkConnection = async () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    setConnectionStatus('checking');
+
+    const result = await ApiDebugger.testConnectivity(apiUrl);
+    setConnectionStatus(result.success ? 'connected' : 'failed');
+
+    if (!result.success) {
+      console.error('API Connection Failed:', result.error);
+    }
+
+    return result.success;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,9 +48,26 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
     setIsLoading(true);
 
     try {
+      // Check connectivity before attempting signup
+      const isConnected = await checkConnection();
+      if (!isConnected) {
+        setError('Cannot connect to the server. Please check your internet connection or try again later.');
+        return;
+      }
+
       await signUp(formData);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.';
+      let errorMessage = 'Failed to create account. Please try again.';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+
+        // Provide specific guidance for network errors
+        if (error.message.includes('Network error') || error.message.includes('Unable to connect')) {
+          errorMessage += ' Please check your internet connection and ensure the server is running.';
+        }
+      }
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -148,7 +182,47 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
                 Sign in here
               </button>
             </p>
+
+            {/* Debug Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsDebugMode(!isDebugMode)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              {isDebugMode ? 'Hide' : 'Show'} Debug Info
+            </button>
           </div>
+
+          {/* Debug Information */}
+          {isDebugMode && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-xs">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">Connection Status:</span>
+                  <div className="flex items-center gap-2">
+                    {connectionStatus === 'checking' && <RefreshCw className="h-3 w-3 animate-spin" />}
+                    <span className={
+                      connectionStatus === 'connected' ? 'text-green-600' :
+                      connectionStatus === 'failed' ? 'text-red-600' : 'text-muted-foreground'
+                    }>
+                      {connectionStatus}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <span className="font-semibold">API URL:</span> {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => checkConnection()}
+                  className="w-full bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded text-xs"
+                  disabled={connectionStatus === 'checking'}
+                >
+                  Test Connection
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       </Card.Content>
     </Card>
