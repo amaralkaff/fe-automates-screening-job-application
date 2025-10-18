@@ -6,7 +6,7 @@ import { Button } from '@/components/retroui/Button';
 import { Input } from '@/components/retroui/Input';
 import { Label } from '@/components/retroui/Label';
 import { Alert } from '@/components/retroui/Alert';
-import { Eye, EyeOff, Mail, Lock, User, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import { SignUpRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
@@ -24,8 +24,6 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isDebugMode, setIsDebugMode] = useState(false);
-  const [connectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,45 +167,8 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
               </button>
             </p>
 
-            {/* Debug Mode Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsDebugMode(!isDebugMode)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              {isDebugMode ? 'Hide' : 'Show'} Debug Info
-            </button>
           </div>
 
-          {/* Debug Information */}
-          {isDebugMode && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg text-xs">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Connection Status:</span>
-                  <div className="flex items-center gap-2">
-                    {connectionStatus === 'checking' && <RefreshCw className="h-3 w-3 animate-spin" />}
-                    <span className={
-                      connectionStatus === 'connected' ? 'text-green-600' :
-                      connectionStatus === 'failed' ? 'text-red-600' : 'text-muted-foreground'
-                    }>
-                      {connectionStatus}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <span className="font-semibold">API URL:</span> {process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://amangly.web.id')}
-                </div>
-                <button
-                  type="button"
-                  className="w-full bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded text-xs"
-                  disabled={connectionStatus === 'checking'}
-                >
-                  Test Connection
-                </button>
-              </div>
-            </div>
-          )}
         </form>
       </Card.Content>
     </Card>

@@ -18,7 +18,7 @@ export function EvaluatingStep({ jobId, onComplete, onError }: EvaluatingStepPro
         <Card.Header>
           <div className="text-center">
             <Card.Title className="flex items-center justify-center space-x-3 text-xl">
-              <Brain className="h-7 w-7" />
+              {/* <Brain className="h-7 w-7" /> */}
               <span>Analysis in Progress</span>
             </Card.Title>
           </div>

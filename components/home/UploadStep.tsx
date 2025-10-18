@@ -37,28 +37,30 @@ export function UploadStep({
               disabled={isLoading}
             />
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col gap-4 pt-4 border-t">
+              <div className="text-center sm:text-left text-sm text-muted-foreground">
                 {cvFile && projectReportFile ? (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center sm:justify-start space-x-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <span>Both documents ready for analysis</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center sm:justify-start space-x-2">
                     <span>Please upload both documents to continue</span>
                   </div>
                 )}
               </div>
-              <Button
-                onClick={onContinue}
-                disabled={!cvFile || !projectReportFile || isLoading}
-                size="lg"
-                className="min-w-[200px]"
-              >
-                Continue to Job Details
-                <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
-              </Button>
+              <div className="flex justify-center">
+                <Button
+                  onClick={onContinue}
+                  disabled={!cvFile || !projectReportFile || isLoading}
+                  size="lg"
+                  className="min-w-[200px] w-full sm:w-auto"
+                >
+                  Continue to Job Details
+                  <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                </Button>
+              </div>
             </div>
           </div>
         </Card.Content>

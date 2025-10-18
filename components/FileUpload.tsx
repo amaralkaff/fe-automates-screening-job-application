@@ -120,7 +120,7 @@ export default function FileUpload({ onFilesChange, disabled = false }: FileUplo
         </Alert>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* CV Upload */}
         <Card>
           <Card.Content className="p-6">

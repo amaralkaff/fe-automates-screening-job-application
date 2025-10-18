@@ -59,7 +59,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await apiClient.signIn(data);
 
-      console.log('Sign in response:', response);
 
       // Check if response contains the expected data
       if (response.sessionToken && response.user) {
@@ -83,7 +82,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await apiClient.signUp(data);
 
-      console.log('Sign up response:', response);
 
       // Check if response contains the expected data
       if (response.sessionToken && response.user) {
@@ -96,7 +94,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         localStorage.setItem('auth_user', JSON.stringify(response.user));
       } else {
         // If signup was successful but didn't return token/user, try signing in
-        console.log('Signup successful, attempting sign in...');
         await signIn({ email: data.email, password: data.password });
       }
     } catch (error) {

@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
-import { AlertTriangle, BarChart3, Brain, Calendar, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, AlertTriangle, BarChart3, Brain, Calendar, Eye } from 'lucide-react';
 import { Card } from '@/components/retroui/Card';
 import { Button } from '@/components/retroui/Button';
 import { Badge } from '@/components/retroui/Badge';
 import { Alert } from '@/components/retroui/Alert';
-import { EvaluationCardSkeleton } from '@/components/ui/skeletons/EvaluationCardSkeleton';
-import { RecentPageSkeleton } from '@/components/ui/skeletons/RecentPageSkeleton';
+import { Header } from '@/components/home/Header';
+import { useAuth } from '@/lib/auth';
 import { apiClient, EvaluationResult } from '@/lib/api';
 
 interface EvaluationSummaryProps {
@@ -71,6 +71,7 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
     <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onSelect}>
       <Card.Content className="p-6">
         <div className="space-y-4">
+          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {/* <Brain className="h-6 w-6 text-blue-600" /> */}
@@ -82,11 +83,14 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
                 </div>
               </div>
             </div>
-            <Badge className={getStatusColor(evaluation.status)}>
-              {evaluation.status.charAt(0).toUpperCase() + evaluation.status.slice(1)}
-            </Badge>
+            <div className="text-right">
+              <Badge className={getStatusColor(evaluation.status)}>
+                {evaluation.status.charAt(0).toUpperCase() + evaluation.status.slice(1)}
+              </Badge>
+            </div>
           </div>
 
+          {/* Progress indicator for in-progress evaluations */}
           {evaluation.status === 'processing' && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -102,12 +106,17 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
             </div>
           )}
 
+          {/* Scores for completed evaluations */}
           {evaluation.result && (
             <div className="space-y-3">
+              {/* Overall Recommendation */}
               <div className={`p-3 rounded-lg border ${getRecommendationColor(overallScore)}`}>
-                <span className="font-medium">{getRecommendation(overallScore)}</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{getRecommendation(overallScore)}</span>
+                </div>
               </div>
 
+              {/* Score Breakdown */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${getScoreColor(overallScore)}`}>
@@ -131,6 +140,7 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
             </div>
           )}
 
+          {/* Error state */}
           {evaluation.status === 'failed' && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
@@ -140,6 +150,7 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
             </Alert>
           )}
 
+          {/* Action button */}
           <div className="flex justify-center">
             <Button variant="outline" size="sm" className="w-full">
               <Eye className="h-4 w-4 mr-2" />
@@ -155,13 +166,22 @@ function EvaluationSummary({ evaluation, onSelect }: EvaluationSummaryProps) {
 
 export default function RecentPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading, isAuthenticated, signOut } = useAuth();
   const [evaluations, setEvaluations] = useState<EvaluationResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    fetchEvaluations();
-  }, []);
+    if (!authLoading && !isAuthenticated) {
+      router.push('/auth');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchEvaluations();
+    }
+  }, [isAuthenticated]);
 
   const fetchEvaluations = async () => {
     try {
@@ -177,107 +197,152 @@ export default function RecentPage() {
     }
   };
 
-  if (isLoading) {
-    return <RecentPageSkeleton />;
+  // Show loading while checking authentication
+  if (authLoading || (isLoading && isAuthenticated)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   const handleSelectEvaluation = (evaluationId: string) => {
     router.push(`/recent/${evaluationId}`);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push('/auth');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
   if (error) {
     return (
-      <div className="flex justify-center">
-        <Card className="max-w-6xl w-full">
-          <Card.Content className="p-8">
-            <div className="text-center space-y-4">
-              <AlertTriangle className="h-8 w-8 text-red-600 mx-auto" />
-              <p className="text-muted-foreground">{error}</p>
-              <div className="flex space-x-3 justify-center">
-                <Button variant="outline" onClick={fetchEvaluations}>
-                  Try Again
-                </Button>
-                <Link href="/">
-                  <Button>New Evaluation</Button>
-                </Link>
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <Header
+            userName={user?.name}
+            onSignOut={handleSignOut}
+          />
+
+          <div className="flex justify-center">
+            <Card className="max-w-6xl w-full">
+              <Card.Content className="p-8">
+                <div className="text-center space-y-4">
+                  <AlertTriangle className="h-8 w-8 text-red-600 mx-auto" />
+                  <p className="text-muted-foreground">{error}</p>
+                  <div className="flex space-x-3 justify-center">
+                    <Button variant="outline" onClick={fetchEvaluations}>
+                      Try Again
+                    </Button>
+                    <Link href="/">
+                      <Button>
+                        New Evaluation
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </Card.Content>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (evaluations.length === 0) {
     return (
-      <div className="flex justify-center">
-        <Card className="max-w-6xl w-full">
-          <Card.Content className="p-8">
-            <div className="text-center space-y-6">
-              <div className="space-y-3">
-                <BarChart3 className="h-12 w-12 text-gray-600 mx-auto" />
-                <h2 className="text-2xl font-bold">No Evaluations Yet</h2>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  You haven&apos;t completed any job application evaluations yet. Start your first evaluation to see your results here.
-                </p>
-              </div>
-              <div className="flex justify-center">
-                <Link href="/">
-                  <Button size="lg" className="min-w-[200px]">
-                    {/* <Brain className="h-5 w-5 mr-2" /> */}
-                    Start Your First Evaluation
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <Header
+            userName={user?.name}
+            onSignOut={handleSignOut}
+          />
+
+          <div className="flex justify-center">
+            <Card className="max-w-6xl w-full">
+              <Card.Content className="p-8">
+                <div className="text-center space-y-6">
+                  <div className="space-y-3">
+                    <BarChart3 className="h-12 w-12 text-gray-600 mx-auto" />
+                    <h2 className="text-2xl font-bold">No Evaluations Yet</h2>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      You haven&apos;t completed any job application evaluations yet. Start your first evaluation to see your results here.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Link href="/">
+                      <Button size="lg" className="min-w-[200px]">
+                        {/* <Brain className="h-5 w-5 mr-2" /> */}
+                        Start Your First Evaluation
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </Card.Content>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-center">
-        <div className="max-w-6xl w-full">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold flex items-center space-x-3">
-                <BarChart3 className="h-7 w-7" />
-                <span>Recent Evaluations</span>
-              </h2>
-              <p className="text-muted-foreground mt-1">
-                Your job application evaluation history ({evaluations.length} evaluations)
-              </p>
-            </div>
-            <Link href="/">
-              <Button>New Evaluation</Button>
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <Header
+          userName={user?.name}
+          onSignOut={handleSignOut}
+        />
 
-      <div className="flex justify-center">
-        <div className="max-w-6xl w-full">
-          <Suspense
-            fallback={
+        <div className="space-y-6">
+          {/* Page Title */}
+          <div className="flex justify-center">
+            <div className="max-w-6xl w-full">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center space-x-3">
+                    <BarChart3 className="h-7 w-7" />
+                    <span>Recent Evaluations</span>
+                  </h2>
+                  <p className="text-muted-foreground mt-1">
+                    Your job application evaluation history ({evaluations.length} evaluations)
+                  </p>
+                </div>
+                <Link href="/">
+                  <Button>
+                    New Evaluation
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Evaluations Grid */}
+          <div className="flex justify-center">
+            <div className="max-w-6xl w-full">
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <EvaluationCardSkeleton key={i} />
+                {evaluations.map((evaluation) => (
+                  <EvaluationSummary
+                    key={evaluation.id}
+                    evaluation={evaluation}
+                    onSelect={() => handleSelectEvaluation(evaluation.id)}
+                  />
                 ))}
               </div>
-            }
-          >
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {evaluations.map((evaluation) => (
-                <EvaluationSummary
-                  key={evaluation.id}
-                  evaluation={evaluation}
-                  onSelect={() => handleSelectEvaluation(evaluation.id)}
-                />
-              ))}
             </div>
-          </Suspense>
+          </div>
         </div>
       </div>
     </div>

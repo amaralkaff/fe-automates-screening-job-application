@@ -304,20 +304,20 @@ ${result.result?.overallSummary || 'Summary not available'}
           <TrendingUp className="h-6 w-6" />
           <span>Evaluation Results</span>
         </h2> */}
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex justify-center sm:justify-start">
             <Button variant="outline" size="sm" onClick={handleDownloadReport}>
               <Download className="h-4 w-4 mr-2" />
               Download
             </Button>
           </div>
-          <div className="flex-1 flex justify-center">
+          <div className="flex justify-center">
             <Button variant="outline" size="sm" onClick={handleShareResults}>
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex justify-center sm:justify-end">
             {onNewEvaluation && (
               <Button onClick={onNewEvaluation}>
                 New Evaluation

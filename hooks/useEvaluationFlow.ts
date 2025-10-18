@@ -51,20 +51,6 @@ export function useEvaluationFlow() {
     setError('Uploading files... This may take a few moments for processing.');
 
     try {
-      console.log('=== Starting Evaluation ===');
-      console.log('Files to upload:', {
-        cvFile: {
-          name: cvFile?.name,
-          size: cvFile?.size,
-          type: cvFile?.type
-        },
-        projectFile: {
-          name: projectReportFile?.name,
-          size: projectReportFile?.size,
-          type: projectReportFile?.type
-        }
-      });
-
       // Step 1: Upload documents
       setError('Processing documents... This may take 1-3 minutes.');
       const uploadResponse = await apiClient.uploadDocuments(cvFile!, projectReportFile!);
