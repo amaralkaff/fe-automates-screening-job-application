@@ -10,6 +10,13 @@ function normalizeApiUrl(url: string): string {
 
 // Enhanced connectivity check with fallback and better error handling
 async function checkApiConnectivity(url: string): Promise<boolean> {
+  // Skip connectivity check for production URLs to avoid CORS issues
+  // The actual API calls will fail if there's a real connectivity problem
+  if (url.includes('https://') && !url.includes('localhost')) {
+    console.log('🔍 Skipping connectivity check for production URL:', url);
+    return true;
+  }
+
   try {
     console.log('🔍 Checking API connectivity to:', url);
     const controller = new AbortController();
