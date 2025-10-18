@@ -32,8 +32,9 @@ export function DebugInfo() {
         body: JSON.stringify({ email: 'test@example.com', password: 'test123' }),
       });
       setTestResult(`✅ Success: ${response.status} ${response.statusText}`);
-    } catch (error: any) {
-      setTestResult(`❌ Error: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setTestResult(`❌ Error: ${errorMessage}`);
     }
   };
 
