@@ -7,15 +7,12 @@ export class ApiDebugger {
     details: string;
     error?: string;
   }> {
-    // For development with CORS issues, provide better feedback
+    // For production APIs, assume they're reachable to avoid CORS issues
     if (apiUrl.includes('https://') && !apiUrl.includes('localhost')) {
-      console.log('🔍 Development mode: Production API detected', apiUrl);
-
-      // Skip connectivity test for production APIs in development to avoid CORS
-      // The actual API calls will work if the backend is properly configured
+      console.log('🔍 Skipping connectivity test for production API:', apiUrl);
       return {
         success: true,
-        details: 'Production API - connectivity will be tested during actual API calls'
+        details: `Production API assumed reachable (CORS-safe check)`
       };
     }
 
@@ -37,8 +34,8 @@ export class ApiDebugger {
         };
       }
 
-      // Test auth endpoint connectivity
-      const authResponse = await fetch(`${apiUrl}/auth/sign-up`, {
+      // Test auth endpoint connectivity with correct /api/ prefix
+      const authResponse = await fetch(`${apiUrl}/api/auth/sign-up`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'test@example.com', password: 'test', name: 'test' }),
@@ -67,31 +64,32 @@ API URL: ${apiUrl}
 User Agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side'}
 Timestamp: ${new Date().toISOString()}
 
-Better Auth Configuration:
-- Expected endpoints: /api/auth/sign-in, /api/auth/sign-up, /api/auth/session
+Backend API Configuration:
+- Expected endpoints: /auth/sign-in, /auth/sign-up, /auth/me, /auth/sign-out
 - Alternative endpoints: /health (for connectivity testing)
 
 Troubleshooting Steps:
 1. Check if the API server is running: ${apiUrl}
-2. Verify Better Auth is properly configured on the backend
+2. Verify backend API is properly configured
 3. Check if these endpoints exist:
    - ${apiUrl}/api/auth/sign-in
    - ${apiUrl}/api/auth/sign-up
-   - ${apiUrl}/api/auth/session
+   - ${apiUrl}/api/auth/me
+   - ${apiUrl}/api/auth/sign-out
 4. Verify CORS configuration allows requests from your domain
 5. Check network connection and firewall settings
 6. Ensure SSL certificate is valid (for HTTPS URLs)
 
 Backend Configuration Check:
-- Verify BETTER_AUTH_SECRET is set in backend .env
-- Check BETTER_AUTH_URL matches your frontend domain
-- Ensure Better Auth routes are properly registered
+- Verify JWT_SECRET is set in backend .env
+- Check CORS configuration allows your frontend domain
+- Ensure API routes are properly registered
 - Confirm the server is running on the correct port
 
 Common Solutions:
 - Development: Use local server (npm run dev:api or yarn dev:api)
 - Production: Verify server deployment and CORS settings
-- Better Auth: Check /api/auth/* endpoints are accessible
+- Backend API: Check /auth/* endpoints are accessible
 - Testing: Use curl to test endpoints directly
 
 Example curl commands:

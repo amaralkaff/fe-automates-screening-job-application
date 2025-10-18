@@ -1,5 +1,43 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id';
 
+// Browser compatibility check and polyfill
+const isBrowser = typeof window !== 'undefined';
+const supportsFetch = isBrowser && typeof fetch !== 'undefined';
+
+// Enhanced fetch with browser compatibility
+async function enhancedFetch(url: string, options: RequestInit): Promise<Response> {
+  if (!supportsFetch) {
+    throw new Error('Your browser does not support fetch API. Please upgrade your browser.');
+  }
+
+  // Add browser-specific optimizations
+  const enhancedOptions: RequestInit = {
+    ...options,
+    // Add cache control for better reliability
+    cache: 'no-cache',
+    // Ensure proper handling of redirects
+    redirect: 'follow',
+  };
+
+  try {
+    return await fetch(url, enhancedOptions);
+  } catch (error) {
+    // If the enhanced fetch fails, try with minimal options
+    console.log('🔄 Enhanced fetch failed, trying minimal configuration...');
+    
+    const minimalOptions: RequestInit = {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: options.body,
+    };
+
+    return await fetch(url, minimalOptions);
+  }
+}
+
 // Ensure URL has proper protocol for browser security
 function normalizeApiUrl(url: string): string {
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -10,24 +48,23 @@ function normalizeApiUrl(url: string): string {
 
 // Enhanced connectivity check with fallback and better error handling
 async function checkApiConnectivity(url: string): Promise<boolean> {
-  // Skip connectivity check for production URLs to avoid CORS issues in development
-  // The actual API calls will fail if there's a real connectivity problem
+  // For production URLs, skip connectivity check to avoid CORS issues
   if (url.includes('https://') && !url.includes('localhost')) {
-    console.log('🔍 Skipping connectivity check for production URL in development:', url);
-    return true;
+    console.log('🔍 Skipping connectivity check for production API:', url);
+    return true; // Assume production APIs are reachable
   }
 
   try {
     console.log('🔍 Checking API connectivity to:', url);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Increased to 10 seconds
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(`${url}/health`, {
       method: 'GET',
       signal: controller.signal,
       headers: { 'Accept': 'application/json' },
-      mode: 'cors', // Explicitly set CORS mode
-      credentials: 'omit' // Don't send credentials for health check
+      mode: 'cors',
+      credentials: 'omit'
     });
 
     clearTimeout(timeoutId);
@@ -35,21 +72,14 @@ async function checkApiConnectivity(url: string): Promise<boolean> {
     return response.ok;
   } catch (error) {
     console.warn('❌ API connectivity check failed:', error);
-
-    // Log more detailed error information for debugging
-    if (error instanceof Error) {
-      console.error('Connectivity check error details:', {
-        name: error.name,
-        message: error.message,
-        url,
-        timestamp: new Date().toISOString(),
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side'
-      });
+    
+    // For local development, be more strict about connectivity
+    if (url.includes('localhost')) {
+      return false;
     }
-
-    // Don't fail completely on connectivity check - let the actual request determine if there's an issue
-    // This prevents false negatives that can occur due to browser security policies
-    return true; // Optimistic approach - let the actual API call fail if there's a real problem
+    
+    // For production, be optimistic and let the actual request determine if there's an issue
+    return true;
   }
 }
 
@@ -236,9 +266,10 @@ class ApiClient {
     const url = `${NORMALIZED_API_URL}${endpoint}`;
     const maxRetries = 2; // Allow up to 2 retries
 
-    // Skip connectivity check for non-critical requests or when already checked
+    // Skip connectivity check for production APIs to avoid CORS issues
+    const isProductionApi = NORMALIZED_API_URL.includes('https://') && !NORMALIZED_API_URL.includes('localhost');
     const isAuthRequest = endpoint.includes('/auth/');
-    const shouldCheckConnectivity = isAuthRequest && !this.hasConnectivityBeenChecked;
+    const shouldCheckConnectivity = isAuthRequest && !this.hasConnectivityBeenChecked && !isProductionApi;
 
     if (shouldCheckConnectivity) {
       const isReachable = await checkApiConnectivity(NORMALIZED_API_URL);
@@ -252,17 +283,39 @@ class ApiClient {
       this.hasConnectivityBeenChecked = true;
     }
 
-    const config: RequestInit = {
+    let config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         ...this.getAuthHeaders(),
         ...options.headers,
       },
-      mode: 'cors', // Explicitly set CORS mode
-      credentials: 'include', // Include credentials for cross-origin requests
+      mode: 'cors',
+      credentials: 'omit',
       ...options,
     };
+
+    // Since backend has simple CORS (origin: () => true), we can use a clean configuration
+    if (isProductionApi) {
+      // Clean, minimal configuration for production APIs
+      config = {
+        method: options.method || 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...this.getAuthHeaders(),
+          ...options.headers,
+        },
+        body: options.body,
+        mode: 'cors',
+        credentials: 'omit',
+      };
+      
+      // Remove body for GET requests
+      if (config.method === 'GET') {
+        delete config.body;
+      }
+    }
 
     // Log the request details for debugging
     console.log('Making API Request:', {
@@ -283,11 +336,9 @@ class ApiClient {
         controller.abort();
       }, DEFAULT_TIMEOUT);
 
-      const response = await fetch(url, {
+      const response = await enhancedFetch(url, {
         ...config,
         signal: controller.signal,
-        // Add additional CORS headers to help with browser security
-        referrerPolicy: 'no-referrer-when-downgrade',
       });
 
       console.log('✅ Fetch completed, response status:', response.status, response.statusText);
@@ -337,11 +388,67 @@ class ApiClient {
         );
       }
 
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new ApiError(
-          'Network error. Please check your internet connection and try again. If the problem persists, the server may be temporarily unavailable.',
-          0
-        );
+      if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+        console.error('Network fetch error details:', {
+          error: error.message,
+          stack: error.stack,
+          url,
+          isProductionApi,
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Server-side',
+          origin: typeof window !== 'undefined' ? window.location.origin : 'Unknown'
+        });
+        
+        // Implement retry logic for network-related errors
+        if (retryCount < maxRetries) {
+          console.log(`🔄 Retrying request (attempt ${retryCount + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          return this.request<T>(endpoint, options, retryCount + 1);
+        }
+
+        // For production APIs, try a different approach
+        if (isProductionApi) {
+          // Try with minimal configuration as a last resort
+          try {
+            console.log('🔄 Attempting minimal configuration request...');
+            const minimalResponse = await fetch(url, {
+              method: options.method || 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+              body: options.body,
+            });
+
+            if (!minimalResponse.ok) {
+              const responseText = await minimalResponse.text();
+              let errorData: ErrorResponse = {};
+              try {
+                errorData = JSON.parse(responseText);
+              } catch {
+                console.error('Failed to parse error response as JSON');
+              }
+
+              throw new ApiError(
+                errorData.error || errorData.message || `HTTP error! status: ${minimalResponse.status}`,
+                minimalResponse.status,
+                errorData
+              );
+            }
+
+            return await minimalResponse.json();
+          } catch (minimalError) {
+            console.error('Minimal configuration also failed:', minimalError);
+            throw new ApiError(
+              'Unable to connect to the server. This appears to be a browser security restriction. Please try:\n1. Refresh the page\n2. Check if your browser is blocking cross-origin requests\n3. Contact support if the problem persists',
+              0
+            );
+          }
+        } else {
+          throw new ApiError(
+            'Network error. Please check your internet connection and ensure the server is running.',
+            0
+          );
+        }
       }
 
       // Check for CORS-related errors
@@ -358,9 +465,24 @@ class ApiClient {
           origin: typeof window !== 'undefined' ? window.location.origin : 'Unknown'
         });
 
-        // Provide a more actionable error message for CORS issues
+        // Implement retry logic for CORS-related errors
+        if (retryCount < maxRetries) {
+          console.log(`🔄 Retrying request due to CORS issue (attempt ${retryCount + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+          return this.request<T>(endpoint, options, retryCount + 1);
+        }
+
+        // For production APIs, provide a more helpful error message
+        if (isProductionApi) {
+          throw new ApiError(
+            'Unable to connect to the server. This appears to be a network connectivity issue. Please:\n1. Check your internet connection\n2. Try refreshing the page\n3. If the problem persists, contact support',
+            0
+          );
+        }
+
+        // For local development, provide CORS-specific guidance
         throw new ApiError(
-          'Network connection issue detected. This could be due to browser security policies or CORS configuration. Please try:\n1. Refresh the page and try again\n2. Check your browser console for more details\n3. Contact support if the problem persists',
+          'Network connection issue detected. This could be due to CORS configuration. Please:\n1. Ensure the backend server is running\n2. Check CORS configuration on the server\n3. Verify the API URL is correct',
           0
         );
       }
@@ -374,7 +496,7 @@ class ApiClient {
         retryCount
       });
 
-      // Implement retry logic for network-related errors
+      // Implement retry logic for other network-related errors
       if (retryCount < maxRetries && (
         error instanceof TypeError && (
           error.message.includes('Failed to fetch') ||
@@ -427,7 +549,7 @@ class ApiClient {
     console.log('FormData entries count:', formData.getAll('cv').length, formData.getAll('project-report').length);
     console.log('Auth headers for upload:', this.getAuthHeaders());
 
-    const url = `${API_BASE_URL}/upload`;
+    const url = `${API_BASE_URL}/api/upload`;
     console.log('Upload URL:', url);
 
     try {
@@ -494,14 +616,14 @@ class ApiClient {
   }
 
   async triggerEvaluation(data: EvaluationRequest): Promise<EvaluationResponse> {
-    return this.request<EvaluationResponse>('/evaluate', {
+    return this.request<EvaluationResponse>('/api/evaluate', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getJobStatus(jobId: string): Promise<EvaluationResult> {
-    return this.request<EvaluationResult>(`/status/${jobId}`);
+    return this.request<EvaluationResult>(`/api/status/${jobId}`);
   }
 
   async pollJobStatus(
@@ -531,7 +653,7 @@ class ApiClient {
     });
   }
 
-  // Authentication methods (Better Auth compatible)
+  // Authentication methods (Backend API compatible)
   async signUp(data: SignUpRequest): Promise<AuthResponse> {
     return this.request<AuthResponse>('/api/auth/sign-up', {
       method: 'POST',
@@ -557,12 +679,12 @@ class ApiClient {
   }
 
   async getUserEvaluations(): Promise<EvaluationResult[]> {
-    const response = await this.request<{jobs: EvaluationResult[]}>('/jobs');
+    const response = await this.request<{jobs: EvaluationResult[]}>('/api/jobs');
     return response.jobs;
   }
 
   async getEvaluationById(evaluationId: string): Promise<EvaluationResult> {
-    return this.request<EvaluationResult>(`/status/${evaluationId}`);
+    return this.request<EvaluationResult>(`/api/status/${evaluationId}`);
   }
 }
 

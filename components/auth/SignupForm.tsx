@@ -29,7 +29,7 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'failed' | 'unknown'>('unknown');
 
   const checkConnection = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id';
     setConnectionStatus('checking');
 
     const result = await ApiDebugger.testConnectivity(apiUrl);
@@ -48,11 +48,16 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
     setIsLoading(true);
 
     try {
-      // Check connectivity before attempting signup
-      const isConnected = await checkConnection();
-      if (!isConnected) {
-        setError('Cannot connect to the server. Please check your internet connection or try again later.');
-        return;
+      // For production APIs, skip connectivity check to avoid CORS issues
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id';
+      const isProductionApi = apiUrl.includes('https://') && !apiUrl.includes('localhost');
+      
+      if (!isProductionApi) {
+        const isConnected = await checkConnection();
+        if (!isConnected) {
+          setError('Cannot connect to the server. Please check your internet connection or try again later.');
+          return;
+        }
       }
 
       await signUp(formData);
@@ -210,7 +215,7 @@ export default function SignupForm({ onToggleMode }: SignupFormProps) {
                   </div>
                 </div>
                 <div>
-                  <span className="font-semibold">API URL:</span> {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}
+                  <span className="font-semibold">API URL:</span> {process.env.NEXT_PUBLIC_API_URL || 'https://amangly.web.id'}
                 </div>
                 <button
                   type="button"
