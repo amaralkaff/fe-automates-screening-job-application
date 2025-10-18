@@ -358,7 +358,7 @@ ${result.result?.overallSummary || 'Summary not available'}
         <Card.Header>
           <div className="text-center">
             <Card.Title className="flex items-center justify-center space-x-2">
-              <Brain className="h-6 w-6" />
+              {/* <Brain className="h-6 w-6" /> */}
               <span>Analysis Summary</span>
             </Card.Title>
           </div>
