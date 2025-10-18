@@ -1,0 +1,17 @@
+[build]
+  command = "bun run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[context.production.environment]
+  NEXT_PUBLIC_API_URL = "https://34.101.92.66"
+
+[context.deploy-preview.environment]
+  NEXT_PUBLIC_API_URL = "https://34.101.92.66"

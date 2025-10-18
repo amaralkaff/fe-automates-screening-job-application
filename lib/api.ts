@@ -1,4 +1,14 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Ensure URL has proper protocol for browser security
+function normalizeApiUrl(url: string): string {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  return url;
+}
+
+const NORMALIZED_API_URL = normalizeApiUrl(API_BASE_URL);
 const UPLOAD_TIMEOUT = 5 * 60 * 1000; // 5 minutes for file upload
 const DEFAULT_TIMEOUT = 30 * 1000; // 30 seconds for other requests
 
@@ -176,7 +186,7 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${NORMALIZED_API_URL}${endpoint}`;
 
     const config: RequestInit = {
       headers: {
@@ -253,6 +263,17 @@ class ApiClient {
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new ApiError(
           'Network error. Please check your connection and try again.',
+          0
+        );
+      }
+
+      // Check for CORS-related errors
+      if (error instanceof TypeError &&
+          (error.message.includes('Failed to fetch') ||
+           error.message.includes('NetworkError') ||
+           error.message.includes('Cross-Origin'))) {
+        throw new ApiError(
+          'Unable to connect to the API. This might be a CORS configuration issue. Please contact support if the problem persists.',
           0
         );
       }
