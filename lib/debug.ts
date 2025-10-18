@@ -12,39 +12,23 @@ export class ApiDebugger {
       console.log('🔍 Testing connectivity to production API (CORS-safe mode):', apiUrl);
 
       try {
-        // Try multiple possible endpoints to find one that works
-        const endpoints = ['/health', '/auth/session', '/auth/sign-in'];
+        // Test the auth sign-in endpoint which we know works
+        const testResponse = await fetch(`${apiUrl}/auth/sign-in`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email: 'test@example.com', password: 'test' }),
+          signal: AbortSignal.timeout(10000),
+          mode: 'cors',
+          credentials: 'omit'
+        });
 
-        for (const endpoint of endpoints) {
-          try {
-            const testResponse = await fetch(`${apiUrl}${endpoint}`, {
-              method: endpoint === '/health' ? 'GET' : 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-              },
-              body: endpoint !== '/health' ? JSON.stringify({ email: 'test@example.com', password: 'test' }) : undefined,
-              signal: AbortSignal.timeout(5000),
-              mode: 'cors',
-              credentials: 'omit'
-            });
-
-            // Any response (even error codes) means the server is reachable
-            return {
-              success: true,
-              details: `Server reachable via ${endpoint} (${testResponse.status}: ${testResponse.statusText})`
-            };
-          } catch (endpointError) {
-            console.log(`Endpoint ${endpoint} failed, trying next...`);
-            continue;
-          }
-        }
-
-        // If all endpoints failed, return a specific error
+        // Any response (even 401 for invalid credentials) means the server is reachable
         return {
-          success: false,
-          details: 'Server may not be configured correctly - no auth endpoints found',
-          error: 'No reachable endpoints found'
+          success: true,
+          details: `Server reachable via auth endpoint (${testResponse.status}: ${testResponse.statusText})`
         };
 
       } catch (error) {
