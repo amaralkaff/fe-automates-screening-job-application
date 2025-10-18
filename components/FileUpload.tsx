@@ -148,9 +148,9 @@ export default function FileUpload({ onFilesChange, disabled = false }: FileUplo
                     size="sm"
                     onClick={() => removeFile(files.indexOf(cvFile))}
                     disabled={disabled}
-                    className="text-red-600 hover:text-red-700 flex-shrink-0 h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
+                    className="text-red-600 hover:text-red-700 flex-shrink-0 h-10 w-10 sm:h-auto sm:w-auto sm:px-3"
                   >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <X className="h-5 w-5 sm:h-4 sm:w-4" />
                     <span className="hidden sm:inline ml-1">Remove</span>
                   </Button>
                 </div>
@@ -208,9 +208,9 @@ export default function FileUpload({ onFilesChange, disabled = false }: FileUplo
                     size="sm"
                     onClick={() => removeFile(files.indexOf(projectFile))}
                     disabled={disabled}
-                    className="text-red-600 hover:text-red-700 flex-shrink-0 h-8 w-8 sm:h-auto sm:w-auto sm:px-3"
+                    className="text-red-600 hover:text-red-700 flex-shrink-0 h-10 w-10 sm:h-auto sm:w-auto sm:px-3"
                   >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <X className="h-5 w-5 sm:h-4 sm:w-4" />
                     <span className="hidden sm:inline ml-1">Remove</span>
                   </Button>
                 </div>
