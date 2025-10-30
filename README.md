@@ -45,7 +45,3 @@ A modern job application analysis tool that helps evaluate and screen job applic
 ├── lib/                   # Utilities and configurations
 └── public/                # Static assets
 ```
-
-## License
-
-MIT
